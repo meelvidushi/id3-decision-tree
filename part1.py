@@ -9,7 +9,6 @@ from collections import Counter
     In this problem, you will implement the decision tree method for classification problems.
     You could test the correctness of your code by typing `pytest -v test1.py` in the terminal.
 '''
-
 #-----------------------------------------------
 class Node:
     '''
@@ -37,8 +36,7 @@ class Node:
 #-----------------------------------------------
 class Tree(object):
     '''
-        Decision Tree (with discrete attributes). 
-        We are using ID3(Iterative Dichotomiser 3) algorithm. So this decision tree is also called ID3.
+        Decision Tree using ID3 Algorithm
     '''
     #--------------------------
     @staticmethod
@@ -51,20 +49,14 @@ class Tree(object):
                 e: the entropy of the list of values, a float scalar
             Hint: you could use collections.Counter.
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
+        counter = Counter(Y)
+        total = len(Y)
+        e = -sum((count/total) * math.log2(count/total) for count in counter.values() if count > 0)
+        return e
 
-
-
-
-        #########################################
-        return e 
-    
-    
-            
     #--------------------------
     @staticmethod
-    def conditional_entropy(Y,X):
+    def conditional_entropy(Y, X):
         '''
             Compute the conditional entropy of y given x. The conditional entropy H(Y|X) means average entropy of children nodes, given attribute X. Refer to https://en.wikipedia.org/wiki/Information_gain_in_decision_trees
             Input:
@@ -73,22 +65,14 @@ class Tree(object):
             Output:
                 ce: the conditional entropy of y given x, a float scalar
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-
-        
-   
-
-
- 
-        #########################################
-        return ce 
-    
-    
+        counter = Counter(X)
+        total = len(X)
+        ce = sum((count/total) * Tree.entropy(Y[X == value]) for value, count in counter.items())
+        return ce
     
     #--------------------------
     @staticmethod
-    def information_gain(Y,X):
+    def information_gain(Y, X):
         '''
             Compute the information gain of y after spliting over attribute x
             InfoGain(Y,X) = H(Y) - H(Y|X) 
@@ -98,19 +82,11 @@ class Tree(object):
             Output:
                 g: the information gain of y after spliting over x, a float scalar
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-    
-
-
- 
-        #########################################
-        return g
-
+        return Tree.entropy(Y) - Tree.conditional_entropy(Y, X)
 
     #--------------------------
     @staticmethod
-    def best_attribute(X,Y):
+    def best_attribute(X, Y):
         '''
             Find the best attribute to split the node. 
             Here we use information gain to evaluate the attributes. 
@@ -123,20 +99,12 @@ class Tree(object):
             Output:
                 i: the index of the attribute to split, an integer scalar
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
+        gains = [Tree.information_gain(Y, X[i]) for i in range(X.shape[0])]
+        return np.argmax(gains)
 
-
-   
-
- 
-        #########################################
-        return i
-
-        
     #--------------------------
     @staticmethod
-    def split(X,Y,i):
+    def split(X, Y, i):
         '''
             Split the node based upon the i-th attribute.
             (1) split the matrix X based upon the values in i-th attribute
@@ -155,13 +123,11 @@ class Tree(object):
                 C: the dictionary of attribute values and children nodes. 
                    Each (key, value) pair represents an attribute value and its corresponding child node.
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-
-
-
-
-        #########################################
+        values = np.unique(X[i])
+        C = {}
+        for v in values:
+            mask = (X[i] == v)
+            C[v] = Node(X[:, mask], Y[mask])
         return C
 
     #--------------------------
@@ -177,15 +143,7 @@ class Tree(object):
                 s: whether or not Conidtion 1 holds, a boolean scalar. 
                 True if all labels are the same. Otherwise, false.
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-
-
-
-        
-        #########################################
-        return s
-    
+        return len(set(Y)) == 1
     #--------------------------
     @staticmethod
     def stop2(X):
@@ -198,19 +156,8 @@ class Tree(object):
             Output:
                 s: whether or not Conidtion 2 holds, a boolean scalar. 
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
+        return np.all(X == X[:, [0]])
 
-    
-   
-
-
-
- 
-        #########################################
-        return s
-    
-            
     #--------------------------
     @staticmethod
     def most_common(Y):
@@ -223,18 +170,9 @@ class Tree(object):
             Output:
                 y: the most common label, a scalar, can be int/float/string.
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-    
+        return Counter(Y).most_common(1)[0][0]
 
-
-
- 
-        #########################################
-        return y
-    
-    
-    
+z
     #--------------------------
     @staticmethod
     def build_tree(t):
@@ -249,17 +187,23 @@ class Tree(object):
                 t.C: the dictionary of attribute values and children nodes. 
                    Each (key, value) pair represents an attribute value and its corresponding child node.
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-    
 
-   
+        if Tree.stop1(t.Y):
+            t.isleaf = True
+            t.p = t.Y[0]
+            return
+        
+        if Tree.stop2(t.X):
+            t.isleaf = True
+            t.p = Tree.most_common(t.Y)
+            return
+        t.i = Tree.best_attribute(t.X, t.Y)
+        t.p = Tree.most_common(t.Y)
+        t.C = Tree.split(t.X, t.Y, t.i)
 
+        for child in t.C.values():
+            Tree.build_tree(child)
 
- 
-        #########################################
-    
-    
     #--------------------------
     @staticmethod
     def train(X, Y):
@@ -274,94 +218,39 @@ class Tree(object):
             Output:
                 t: the root of the tree.
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-    
-
-
- 
-        #########################################
-        return t
-    
-    
-    
-    #--------------------------
-    @staticmethod
-    def inference(t,x):
-        '''
-            Given a decision tree and one data instance, infer the label of the instance recursively. 
-            Input:
-                t: the root of the tree.
-                x: the attribute vector, a numpy vectr of shape p.
-                   Each attribute value can be int/float/string.
-            Output:
-                y: the class labels, a numpy array of length n.
-                   Each element can be int/float/string.
-        '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-
-   
-
-
-
-
- 
-        #########################################
-        return y
-    
-    #--------------------------
-    @staticmethod
-    def predict(t,X):
-        '''
-            Given a decision tree and a dataset, predict the labels on the dataset. 
-            Input:
-                t: the root of the tree.
-                X: the feature matrix, a numpy matrix of shape p by n.
-                   Each element can be int/float/string.
-                   Here n is the number data instances in the dataset, p is the number of attributes.
-            Output:
-                Y: the class labels, a numpy array of length n.
-                   Each element can be int/float/string.
-        '''
-        #########################################
-        ## INSERT YOUR CODE HERE
-
-
-
-
-
-        #########################################
-        return Y
-
-
+        root = Node(X, Y)
+        Tree.build_tree(root)
+        return root
 
     #--------------------------
     @staticmethod
-    def load_dataset(filename = 'data1.csv'):
+    def inference(t, x):
         '''
-            Load dataset 1 from the CSV file: 'data1.csv'. 
-            The first row of the file is the header (including the names of the attributes)
-            In the remaining rows, each row represents one data instance.
-            The first column of the file is the label to be predicted.
-            In remaining columns, each column represents an attribute.
-            Input:
-                filename: the filename of the dataset, a string.
-            Output:
-                X: the feature matrix, a numpy matrix of shape p by n.
-                   Each element can be int/float/string.
-                   Here n is the number data instances in the dataset, p is the number of attributes.
-                Y: the class labels, a numpy array of length n.
-                   Each element can be int/float/string.
+            Infer the label of a single instance using the decision tree.
         '''
-        #########################################
-        ## INSERT YOUR CODE HERE
+        if t.isleaf:
+            return t.p
 
+        value = x[t.i]
+        if value in t.C:
+            return Tree.inference(t.C[value], x)
+        return t.p
 
+    #--------------------------
+    @staticmethod
+    def predict(t, X):
+        '''
+            Predict labels for a dataset.
+        '''
+        return np.array([Tree.inference(t, X[:, i]) for i in range(X.shape[1])])
 
- 
-        #########################################
-        return X,Y
-
-
-
+    #--------------------------
+    @staticmethod
+    def load_dataset(filename='data1.csv'):
+        '''
+            Load dataset from a CSV file.
+        '''
+        data = np.genfromtxt(filename, delimiter=',', dtype=str)
+        Y = data[1:, 0]
+        X = data[1:, 1:].T
+        return X, Y
