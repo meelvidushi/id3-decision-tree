@@ -96,20 +96,17 @@ class Tree(object):
     #--------------------------
     @staticmethod
     def build_tree(t):
-        '''
-            Recursively build tree nodes.
-        '''
         if Tree.stop1(t.Y):
             t.isleaf = True
             t.p = t.Y[0]
             return
-
+        
         if Tree.stop2(t.X):
             t.isleaf = True
             t.p = Tree.most_common(t.Y)
             return
-
         t.i = Tree.best_attribute(t.X, t.Y)
+        t.p = Tree.most_common(t.Y)
         t.C = Tree.split(t.X, t.Y, t.i)
 
         for child in t.C.values():
