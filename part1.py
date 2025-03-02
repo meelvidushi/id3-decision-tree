@@ -172,7 +172,6 @@ class Tree(object):
         '''
         return Counter(Y).most_common(1)[0][0]
 
-z
     #--------------------------
     @staticmethod
     def build_tree(t):
